@@ -1,0 +1,12 @@
+# Normalize line endings
+* text=auto
+
+# Shell scripts must always use LF
+*.sh text eol=lf
+
+# YAML/templates use LF
+*.yml text eol=lf
+*.yaml text eol=lf
+*.tmpl text eol=lf
+*.json text eol=lf
+*.md text eol=lf
