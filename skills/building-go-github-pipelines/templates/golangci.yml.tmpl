@@ -1,0 +1,105 @@
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # Correctness
+    - errcheck          # unchecked errors
+    - govet             # vet checks (includes shadow)
+    - staticcheck       # staticanalysis (SA, S, QF)
+    - ineffassign       # ineffectual assignments
+    - unused            # unused code
+
+    # Security
+    - gosec             # security issues (G001-G601)
+
+    # Code quality
+    - gocritic          # diagnostics and style suggestions
+    - revive            # opinionated linter (replaces golint)
+    - goconst           # repeated string literals
+    - misspell          # spelling mistakes
+
+    # Complexity
+    - funlen            # function length
+    - gocognit          # cognitive complexity
+    - gocyclo           # cyclomatic complexity
+
+    # Error handling
+    - errorlint         # error wrapping issues
+    - wrapcheck         # errors from external packages must be wrapped
+
+    # HTTP / Context
+    - bodyclose         # http response body not closed
+    - noctx             # http requests without context
+
+    # Formatting
+    - gofmt             # go formatting (detects drift without fixing)
+    - goimports         # import grouping
+
+    # Miscellaneous
+    - exhaustive        # missing enum cases in switch
+    - nilerr            # nil returned when error is non-nil
+    - unparam           # unused function parameters
+    - prealloc          # slice preallocation opportunities
+
+linters-settings:
+  govet:
+    enable:
+      - shadow           # variable shadowing
+
+  funlen:
+    lines: 60
+    statements: 40
+
+  gocognit:
+    min-complexity: 23
+
+  gocyclo:
+    min-complexity: 15
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
+
+  gosec:
+    excludes:
+      - G104  # Errors unhandled (covered by errcheck)
+      - G304  # File path provided as taint input (often intentional)
+
+  wrapcheck:
+    ignorePackageGlobs:
+      - "github.com/{{DOCKER_USER}}/{{PROJECT}}/*"
+
+issues:
+  exclude-rules:
+    # Test files: relax rules that hurt test readability
+    - path: "_test\\.go$"
+      linters:
+        - errcheck
+        - gosec
+        - gocritic
+        - funlen
+        - gocognit
+        - govet
+        - goconst
+        - wrapcheck
+
+    # Generated code
+    - path: "(_gen|_generated)\\.go$"
+      linters:
+        - all
+
+  # Maximum issues per linter (0 = unlimited)
+  max-issues-per-linter: 0
+  max-same-issues: 0

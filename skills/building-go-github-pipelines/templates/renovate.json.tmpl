@@ -1,0 +1,112 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":automergeMinor",
+    "group:allNonMajor"
+  ],
+  "timezone": "Europe/Berlin",
+  "schedule": ["before 6am"],
+  "prConcurrentLimit": 5,
+  "platformAutomerge": true,
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Automerge minor and patch updates for Go modules",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge minor and patch updates for GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge minor and patch updates for npm",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge Dockerfile base image updates (minor/patch)",
+      "matchManagers": ["dockerfile"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Major updates require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Pin golangci-lint in GitHub Actions as a go package",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["github.com/golangci/golangci-lint/v2"],
+      "automerge": true
+    },
+    {
+      "description": "Pin govulncheck in GitHub Actions as a go package",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["golang.org/x/vuln"],
+      "automerge": true
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Update Go version in CI workflows (Renovate annotation comment)",
+      "customType": "regex",
+      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+      "matchStrings": [
+        "# renovate: datasource=golang-version depName=golang\\n\\s+GO_VERSION: \"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "golang"
+    },
+    {
+      "description": "Update golangci-lint installed via go install",
+      "customType": "regex",
+      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$", "Taskfile\\.yml$"],
+      "matchStrings": [
+        "# renovate: datasource=go depName=github.com/golangci/golangci-lint/v2\\n.*golangci-lint@(?<currentValue>[^\\s\"]+)"
+      ],
+      "datasourceTemplate": "go",
+      "depNameTemplate": "github.com/golangci/golangci-lint/v2"
+    },
+    {
+      "description": "Update govulncheck installed via go install",
+      "customType": "regex",
+      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$", "Taskfile\\.yml$"],
+      "matchStrings": [
+        "# renovate: datasource=go depName=golang.org/x/vuln\\n.*govulncheck@(?<currentValue>[^\\s\"]+)"
+      ],
+      "datasourceTemplate": "go",
+      "depNameTemplate": "golang.org/x/vuln"
+    },
+    {
+      "description": "Update TruffleHog action version",
+      "customType": "regex",
+      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+      "matchStrings": [
+        "# renovate: datasource=github-releases depName=trufflesecurity/trufflehog\\n.*trufflesecurity/trufflehog@(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "trufflesecurity/trufflehog"
+    },
+    {
+      "description": "Update GoReleaser version in workflows",
+      "customType": "regex",
+      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+      "matchStrings": [
+        "# renovate: datasource=github-releases depName=goreleaser/goreleaser\\n\\s+version: (?<currentValue>[^\\s\"]+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "goreleaser/goreleaser"
+    }
+  ]
+}

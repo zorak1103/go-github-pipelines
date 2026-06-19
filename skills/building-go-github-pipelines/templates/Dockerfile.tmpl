@@ -1,0 +1,28 @@
+# Runtime-only image — binary is pre-built by GoReleaser (CGO_ENABLED=0)
+# GoReleaser copies the correct platform binary via ${TARGETPLATFORM}
+
+FROM alpine:3.24
+
+# Install runtime dependencies
+RUN apk --no-cache add \
+    ca-certificates \
+    tzdata
+
+# Non-root user for security (UID/GID 1000 matches common CI/CD conventions)
+RUN addgroup -g 1000 -S {{PROJECT}} && \
+    adduser -u 1000 -S {{PROJECT}} -G {{PROJECT}}
+
+# Binary injected by GoReleaser's dockers_v2 block
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/{{BINARY}} /usr/local/bin/{{BINARY}}
+
+# Data directory for persistent storage (mount a volume here in production)
+RUN mkdir -p /data && chown {{PROJECT}}:{{PROJECT}} /data
+
+USER {{PROJECT}}
+
+WORKDIR /home/{{PROJECT}}
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/{{BINARY}}"]

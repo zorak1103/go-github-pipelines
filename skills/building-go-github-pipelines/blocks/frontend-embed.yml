@@ -1,0 +1,64 @@
+# frontend-embed.yml — Block for projects with a frontend compiled into go:embed
+# Merge these step snippets into ci.yml at the [FRONTEND-EMBED: ...] markers.
+#
+# REQUIRED additional tasks in Taskfile.yml:
+#   build:frontend   — npm ci + npm run build → writes to frontend/dist/
+#   lint:frontend    — eslint (or tsc --noEmit) on frontend source
+#
+# REQUIRED environment variables in ci.yml env block: (none extra; NODE_VERSION set here)
+#
+# Placeholder: {{NODE_VERSION}} — default "24"
+
+# ── Step: Setup Node.js (insert after each `Setup Go` step in jobs that need it) ──
+- name: Setup Node.js
+  uses: actions/setup-node@v6
+  with:
+    node-version: '{{NODE_VERSION}}'
+    cache: 'npm'
+    cache-dependency-path: frontend/package-lock.json
+
+# ── Step: Build frontend (insert before Go steps that compile embed) ──
+# Required before: lint, test, build, govulncheck, release/verify
+- name: Build frontend (required for go:embed)
+  run: task build:frontend
+
+# ── Step: Embed placeholder (for test/coverage jobs that need compile but not real assets) ──
+# Use this INSTEAD of `Build frontend` in jobs where you want fast compile without npm.
+# Replace with real `Build frontend` step if tests need actual asset content.
+- name: Prepare embed placeholder
+  run: mkdir -p frontend/dist && touch frontend/dist/.gitkeep
+
+# ── Step: Lint frontend (insert in lint job only) ──
+- name: Lint frontend
+  run: task lint:frontend
+
+# ────────────────────────────────────────────────────
+# Taskfile.yml additions needed when using this block:
+# ────────────────────────────────────────────────────
+#
+# build:frontend:
+#   desc: Build the frontend (npm ci + build)
+#   dir: frontend
+#   cmds:
+#     - npm ci
+#     - npm run build
+#
+# lint:frontend:
+#   desc: Lint frontend source (eslint + type check)
+#   dir: frontend
+#   cmds:
+#     - npm ci
+#     - npm run lint
+#     - npm run type-check
+#
+# ────────────────────────────────────────────────────
+# .goreleaser.yaml additions needed when using this block:
+# ────────────────────────────────────────────────────
+# The frontend dist is embedded via go:embed at compile time.
+# GoReleaser must build the frontend first; add to .goreleaser.yaml before hook:
+#
+# before:
+#   hooks:
+#     - npm ci --prefix frontend
+#     - npm run build --prefix frontend
+#     - go mod download

@@ -1,0 +1,32 @@
+name: Renovate
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # Daily at 2:00 UTC
+  workflow_dispatch:
+
+jobs:
+  renovate:
+    name: Renovate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate Renovate config
+        uses: suzuki-shunsuke/github-action-renovate-config-validator@v2.1.0
+        with:
+          config_file_path: renovate.json
+
+      - name: Run Renovate
+        # Renovate auto-detects GitHub Actions uses: pins — no annotation needed
+        uses: renovatebot/github-action@v46.1.15
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+        with:
+          configurationFile: renovate.json
+          token: ${{ secrets.RENOVATE_TOKEN }}
+          # IMPORTANT: RENOVATE_TOKEN must be a Personal Access Token (PAT), NOT GITHUB_TOKEN.
+          # PRs opened with GITHUB_TOKEN do not trigger CI workflows (GitHub security policy),
+          # so automerge and Dependency Dashboard never work correctly with GITHUB_TOKEN.
+          # Setup: Create a fine-grained PAT with Contents + Pull requests + Issues (write),
+          # then add it as a repository secret named RENOVATE_TOKEN.

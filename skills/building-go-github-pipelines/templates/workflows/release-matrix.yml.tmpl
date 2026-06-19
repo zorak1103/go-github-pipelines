@@ -1,0 +1,119 @@
+# GitHub Actions Release Workflow for {{PROJECT}} — Manual Matrix
+# Binary-only release (no Docker). 5 platform targets + GitHub Release.
+# Use this instead of release-goreleaser when no Docker/nfpm packages are needed.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  # renovate: datasource=golang-version depName=golang
+  GO_VERSION: "{{GO_VERSION}}"
+
+jobs:
+  # ============================================================================
+  # CI gate — all CI jobs must pass before release runs
+  # ============================================================================
+  verify:
+    name: Verify (lint + test)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Install golangci-lint
+        # renovate: datasource=go depName=github.com/golangci/golangci-lint/v2
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{GOLANGCI_VERSION}}
+
+      - name: Run lint
+        run: task lint
+
+      - name: Run tests
+        run: task test:coverage
+
+  # ============================================================================
+  # BUILD — Cross-compile for all target platforms
+  # ============================================================================
+  release:
+    name: Release
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: linux-amd64
+          - goos: linux
+            goarch: arm64
+            suffix: linux-arm64
+          - goos: windows
+            goarch: amd64
+            suffix: windows-amd64
+            ext: .exe
+          - goos: darwin
+            goarch: amd64
+            suffix: darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            suffix: darwin-arm64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      # [FRONTEND-EMBED: insert setup-node step here]
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download dependencies
+        run: go mod download
+
+      # [FRONTEND-EMBED: insert build:frontend step here]
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          go build \
+            -ldflags="-s -w -X {{MODULE}}/internal/version.Version=${{ github.ref_name }}" \
+            -o {{BINARY}}-${{ matrix.suffix }}${{ matrix.ext || '' }} \
+            ./cmd/{{BINARY}}/
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v3
+        with:
+          files: {{BINARY}}-${{ matrix.suffix }}${{ matrix.ext || '' }}

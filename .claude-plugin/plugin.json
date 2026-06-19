@@ -1,0 +1,29 @@
+{
+  "name": "go-github-pipelines",
+  "version": "1.0.0",
+  "description": "Composable GitHub Actions CI/CD pipeline skill for Go projects. Assembles lint, test, coverage enforcement, govulncheck, secret scanning, Renovate, and GoReleaser workflows from versioned templates — with optional blocks for frontend+go:embed, Docker, and extra toolchains.",
+  "author": {
+    "name": "zorak1103",
+    "url": "https://github.com/zorak1103"
+  },
+  "homepage": "https://github.com/zorak1103/go-github-pipelines",
+  "repository": "https://github.com/zorak1103/go-github-pipelines",
+  "license": "MIT",
+  "keywords": [
+    "go",
+    "golang",
+    "github-actions",
+    "ci-cd",
+    "pipelines",
+    "golangci-lint",
+    "goreleaser",
+    "renovate",
+    "govulncheck",
+    "trufflehog",
+    "coverage",
+    "docker"
+  ],
+  "skills": [
+    "./skills/"
+  ]
+}

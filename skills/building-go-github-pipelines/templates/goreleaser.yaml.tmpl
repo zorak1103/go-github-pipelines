@@ -1,0 +1,97 @@
+version: 2
+
+project_name: {{PROJECT}}
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: {{PROJECT}}
+    binary: {{BINARY}}
+    main: ./cmd/{{BINARY}}/
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - "7"
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X {{MODULE}}/internal/version.Version={{.Version}}
+      - -X {{MODULE}}/internal/version.Commit={{.Commit}}
+      - -X {{MODULE}}/internal/version.Date={{.Date}}
+
+archives:
+  - id: default
+    ids:
+      - {{PROJECT}}
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{.ProjectName}}_
+      {{- title .Os}}_
+      {{- if eq .Arch "amd64"}}x86_64
+      {{- else if eq .Arch "386"}}i386
+      {{- else}}{{.Arch}}{{end}}
+      {{- if .Arm}}v{{.Arm}}{{end}}
+
+# Multi-arch Docker images using dockers_v2 (modern API — produces one manifest,
+# not separate per-arch images). Requires QEMU + Buildx in the release workflow.
+dockers_v2:
+  - id: {{PROJECT}}-multiarch
+    image_templates:
+      - "{{DOCKER_IMAGE}}:{{.Version}}"
+      - "{{DOCKER_IMAGE}}:latest"
+    build_flag_templates:
+      - "--platform=linux/amd64,linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.url=https://github.com/{{DOCKER_USER}}/{{PROJECT}}"
+    use: buildx
+
+# Linux packages (optional — delete this section if not shipping deb/rpm/apk)
+nfpms:
+  - id: packages
+    package_name: {{PROJECT}}
+    vendor: {{DOCKER_USER}}
+    homepage: https://github.com/{{DOCKER_USER}}/{{PROJECT}}
+    maintainer: "{{DOCKER_USER}} <noreply@github.com>"
+    description: "{{PROJECT}} — TODO: short description"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+      - archlinux
+    contents:
+      - src: ./scripts/{{PROJECT}}.service
+        dst: /etc/systemd/system/{{PROJECT}}.service
+        type: config|noreplace
+        packager: deb
+      # Add more content mappings as needed
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch

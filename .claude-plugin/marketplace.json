@@ -1,0 +1,17 @@
+{
+  "name": "go-github-pipelines",
+  "owner": {
+    "name": "zorak1103",
+    "url": "https://github.com/zorak1103"
+  },
+  "plugins": [
+    {
+      "name": "go-github-pipelines",
+      "source": "./",
+      "description": "Composable GitHub Actions CI/CD pipeline skill for Go projects. Assembles best-practice workflows from versioned templates with optional blocks for frontend, Docker, and extra toolchains.",
+      "version": "1.0.0",
+      "category": "devops",
+      "keywords": ["go", "golang", "github-actions", "ci-cd", "goreleaser", "renovate"]
+    }
+  ]
+}
