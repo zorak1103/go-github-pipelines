@@ -112,7 +112,7 @@ if [ "$MODE" = "per-function" ]; then
     [[ "$rel_path" == *_test.go ]] && continue
 
     # Skip generated files
-    [[ "$rel_path" == *_gen.go ]] || [[ "$rel_path" == *_generated.go ]] && continue
+    [[ "$rel_path" == *_gen.go || "$rel_path" == *_generated.go ]] && continue
 
     # Skip functions with 0 statements (empty, interface-only, etc.)
     func_stmts_val=$(echo "$local_func_stmts" | awk -v key="${rel_path}:${start_line}" '$1==key{print $2}')
