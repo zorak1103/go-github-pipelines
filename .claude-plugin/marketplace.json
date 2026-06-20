@@ -9,7 +9,7 @@
       "name": "go-github-pipelines",
       "source": "./",
       "description": "Composable GitHub Actions CI/CD pipeline skill for Go projects. Assembles best-practice workflows from versioned templates with optional blocks for frontend, Docker, and extra toolchains.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "devops",
       "keywords": ["go", "golang", "github-actions", "ci-cd", "goreleaser", "renovate"]
     }
