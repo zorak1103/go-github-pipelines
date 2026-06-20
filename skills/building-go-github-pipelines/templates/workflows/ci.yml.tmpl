@@ -34,7 +34,7 @@ jobs:
       # [FRONTEND-EMBED: insert setup-node step here]
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@v2  # SHA-pin
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -83,7 +83,7 @@ jobs:
       # [FRONTEND-EMBED: insert setup-node step here]
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@v2  # SHA-pin
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -131,7 +131,7 @@ jobs:
       # [FRONTEND-EMBED: insert setup-node step here]
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@v2  # SHA-pin
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -167,7 +167,12 @@ jobs:
 
       - name: Run govulncheck with ignore-list gate
         run: |
-          govulncheck -json ./... > vulncheck_output.json 2>/dev/null || true
+          govulncheck -json ./... > vulncheck_output.json 2>&1; GOVULN_EXIT=$?
+          # exit 0 = clean, exit 3 = vulnerabilities found (handled below), other = tool error
+          if [ "$GOVULN_EXIT" -ne 0 ] && [ "$GOVULN_EXIT" -ne 3 ]; then
+            echo "::error::govulncheck failed with exit code ${GOVULN_EXIT} (binary missing, network error, or parse failure)"
+            exit "$GOVULN_EXIT"
+          fi
 
           FOUND_VULNS=$(grep -oP '"finding":\{"osv":"GO-[^"]*"' vulncheck_output.json \
             | grep -oP 'GO-[^"]*' | sort -u)
@@ -210,7 +215,7 @@ jobs:
           fetch-depth: 0  # Full history required for TruffleHog
 
       - name: TruffleHog Secret Scan
-        # Renovate auto-detects GitHub Actions uses: pins — no annotation needed
-        uses: trufflesecurity/trufflehog@v3.88.31
+        # renovate: datasource=github-releases depName=trufflesecurity/trufflehog
+        uses: trufflesecurity/trufflehog@v3.88.31  # SHA-pin
         with:
           extra_args: --only-verified
