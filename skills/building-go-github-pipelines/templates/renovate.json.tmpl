@@ -11,6 +11,7 @@
   "schedule": ["before 6am"],
   "prConcurrentLimit": 5,
   "platformAutomerge": true,
+  "gitAuthor": "{{GITHUB_USER}} <{{GITHUB_USER}}@users.noreply.github.com>",
   "vulnerabilityAlerts": {
     "enabled": true
   },
@@ -61,7 +62,7 @@
     {
       "description": "Update Go version in CI workflows (Renovate annotation comment)",
       "customType": "regex",
-      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+      "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/"],
       "matchStrings": [
         "# renovate: datasource=golang-version depName=golang\\n\\s+GO_VERSION: \"(?<currentValue>[^\"]+)\""
       ],
@@ -71,7 +72,7 @@
     {
       "description": "Update golangci-lint installed via go install",
       "customType": "regex",
-      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$", "Taskfile\\.yml$"],
+      "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/", "/Taskfile\\.yml$/"],
       "matchStrings": [
         "# renovate: datasource=go depName=github.com/golangci/golangci-lint/v2\\n.*golangci-lint@(?<currentValue>[^\\s\"]+)"
       ],
@@ -81,7 +82,7 @@
     {
       "description": "Update govulncheck installed via go install",
       "customType": "regex",
-      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$", "Taskfile\\.yml$"],
+      "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/", "/Taskfile\\.yml$/"],
       "matchStrings": [
         "# renovate: datasource=go depName=golang.org/x/vuln\\n.*govulncheck@(?<currentValue>[^\\s\"]+)"
       ],
@@ -91,7 +92,7 @@
     {
       "description": "Update TruffleHog action version",
       "customType": "regex",
-      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+      "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/"],
       "matchStrings": [
         "# renovate: datasource=github-releases depName=trufflesecurity/trufflehog\\n.*trufflesecurity/trufflehog@(?<currentValue>[^\\s]+)"
       ],
@@ -101,7 +102,7 @@
     {
       "description": "Update GoReleaser version in workflows",
       "customType": "regex",
-      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+      "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/"],
       "matchStrings": [
         "# renovate: datasource=github-releases depName=goreleaser/goreleaser\\n\\s+version: (?<currentValue>[^\\s\"]+)"
       ],
