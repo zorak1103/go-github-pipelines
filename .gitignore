@@ -12,3 +12,5 @@ Thumbs.db
 *.tmp
 *.bak
 temp/
+.superpowers/
+.remember/
