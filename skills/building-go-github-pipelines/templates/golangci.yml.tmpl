@@ -22,22 +22,18 @@ linters:
     - goconst           # repeated string literals
     - misspell          # spelling mistakes
 
-    # Complexity
+    # Complexity (onboarding: raise to funlen:80/50, gocognit:30, gocyclo:20)
     - funlen            # function length
     - gocognit          # cognitive complexity
     - gocyclo           # cyclomatic complexity
 
     # Error handling
     - errorlint         # error wrapping issues
-    - wrapcheck         # errors from external packages must be wrapped
+    - wrapcheck         # profile:service-only — errors from external packages must be wrapped
 
     # HTTP / Context
     - bodyclose         # http response body not closed
-    - noctx             # http requests without context
-
-    # Formatting
-    - gofmt             # go formatting (detects drift without fixing)
-    - goimports         # import grouping
+    - noctx             # profile:service-only — http requests without context
 
     # Miscellaneous
     - exhaustive        # missing enum cases in switch
@@ -45,41 +41,57 @@ linters:
     - unparam           # unused function parameters
     - prealloc          # slice preallocation opportunities
 
-linters-settings:
-  govet:
-    enable:
-      - shadow           # variable shadowing
+  settings:
+    govet:
+      enable:
+        - shadow           # variable shadowing
 
-  funlen:
-    lines: 60
-    statements: 40
+    errcheck:
+      exclude-functions:
+        # CLI / logging patterns where ignoring errors is idiomatic
+        - fmt.Fprint
+        - fmt.Fprintln
+        - fmt.Fprintf
+        - (io.Closer).Close
 
-  gocognit:
-    min-complexity: 23
+    funlen:
+      lines: 60            # onboarding: 80
+      statements: 40       # onboarding: 50
 
-  gocyclo:
-    min-complexity: 15
+    gocognit:
+      min-complexity: 23   # onboarding: 30
 
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
+    gocyclo:
+      min-complexity: 15   # onboarding: 20
 
-  revive:
-    rules:
-      - name: exported
-        arguments:
-          - disableStutteringCheck
+    goconst:
+      min-occurrences: 5   # default 3 is too noisy for test fixtures
 
-  gosec:
-    excludes:
-      - G104  # Errors unhandled (covered by errcheck)
-      - G304  # File path provided as taint input (often intentional)
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
 
-  wrapcheck:
-    ignorePackageGlobs:
-      - "github.com/{{DOCKER_USER}}/{{PROJECT}}/*"
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+
+    gosec:
+      excludes:
+        - G104  # Errors unhandled (covered by errcheck)
+        - G304  # File path provided as taint input (often intentional)
+
+    wrapcheck:
+      ignorePackageGlobs:
+        - "{{MODULE}}/*"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 issues:
   exclude-rules:
