@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.0] — 2026-06-22
+
+### Fixes
+
+- **release-matrix parallel upload race** — The matrix `release` job is split into `build`
+  (matrix: cross-compile + upload artifact per platform) and `publish` (single job: download
+  all artifacts + create GitHub Release once). Eliminates the `422 "release already exists"`
+  race when all 5 matrix jobs called `softprops/action-gh-release` in parallel.
+  `retention-days: 1` keeps artifacts ephemeral; only the GitHub Release persists.
+
+### Features
+
+- **Auto-generated release notes** — `publish` job enables `generate_release_notes: true`
+  in `softprops/action-gh-release`; GitHub populates release notes from merged PRs and
+  commits since the last tag.
+
+> **If you generated config with v1.1.0 or v1.2.0 using `release-matrix`, regenerate to
+> pick up the race fix.**
+
 ## [1.2.0] — 2026-06-22
 
 ### Breaking changes (generated output)
