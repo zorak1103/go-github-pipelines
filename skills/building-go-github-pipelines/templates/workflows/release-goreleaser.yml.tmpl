@@ -12,10 +12,6 @@ on:
 permissions:
   contents: write
 
-env:
-  # renovate: datasource=golang-version depName=golang
-  GO_VERSION: "{{GO_VERSION}}"
-
 jobs:
   # ============================================================================
   # VERIFY - Re-run lint+test before publishing (gates the release job)
@@ -32,7 +28,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           cache: true
 
       # [FRONTEND-EMBED: insert setup-node step here]
@@ -74,7 +70,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           cache: true
 
       # [FRONTEND-EMBED: insert setup-node step here]

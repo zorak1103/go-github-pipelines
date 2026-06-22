@@ -60,16 +60,6 @@
   ],
   "customManagers": [
     {
-      "description": "Update Go version in CI workflows (Renovate annotation comment)",
-      "customType": "regex",
-      "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/"],
-      "matchStrings": [
-        "# renovate: datasource=golang-version depName=golang\\n\\s+GO_VERSION: \"(?<currentValue>[^\"]+)\""
-      ],
-      "datasourceTemplate": "golang-version",
-      "depNameTemplate": "golang"
-    },
-    {
       "description": "Update golangci-lint installed via go install",
       "customType": "regex",
       "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/", "/Taskfile\\.yml$/"],
