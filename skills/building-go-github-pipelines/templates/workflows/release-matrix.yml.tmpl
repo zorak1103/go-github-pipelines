@@ -2,6 +2,10 @@
 # GitHub Actions Release Workflow for {{PROJECT}} — Manual Matrix
 # Binary-only release (no Docker). 5 platform targets + GitHub Release.
 # Use this instead of release-goreleaser when no Docker/nfpm packages are needed.
+#
+# Job graph:
+#   verify ─► build (matrix ×5, each uploads one artifact) ─► publish (single, creates release)
+# The fan-in avoids the parallel action-gh-release race: only publish calls the Releases API.
 
 name: Release
 
@@ -49,14 +53,12 @@ jobs:
         run: task test:coverage
 
   # ============================================================================
-  # BUILD — Cross-compile for all target platforms
+  # BUILD — Cross-compile for all target platforms, upload each binary as artifact
   # ============================================================================
-  release:
-    name: Release
+  build:
+    name: Build (${{ matrix.suffix }})
     needs: verify
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     strategy:
       matrix:
         include:
@@ -113,7 +115,31 @@ jobs:
             -o "{{BINARY}}-${SUFFIX}${EXT}" \
             ./cmd/{{BINARY}}/
 
-      - name: Upload release asset
+      - name: Upload binary as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: {{BINARY}}-${{ matrix.suffix }}
+          path: {{BINARY}}-${{ matrix.suffix }}${{ matrix.ext || '' }}
+          retention-days: 1
+
+  # ============================================================================
+  # PUBLISH — Download all binaries, create a single GitHub Release
+  # ============================================================================
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all binaries
+        uses: actions/download-artifact@v8
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v3  # SHA-pin
         with:
-          files: {{BINARY}}-${{ matrix.suffix }}${{ matrix.ext || '' }}
+          files: dist/*
+          generate_release_notes: true
