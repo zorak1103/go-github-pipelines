@@ -130,6 +130,8 @@ fi
 
 `${{ matrix.* }}` in `with:` blocks (e.g. `softprops/action-gh-release` `files:`) is safe — `with:` is evaluated by the action, not the shell.
 
+**Fan-in invariant — do not recombine `build` and `publish`:** The matrix job (`build`) only uploads artifacts; the single `publish` job downloads them and calls `softprops/action-gh-release` exactly once. Merging these back into one job reintroduces the parallel `POST /releases` race: all 5 matrix variants try to create the same release concurrently, causing `422 Unprocessable Entity` on the losers. `retention-days: 1` on artifacts is intentional — only the GitHub Release persists.
+
 ### check-coverage.sh — coverage modes
 
 The script accepts a third argument: `per-file` (default), `per-function` (strictest), `total`.
