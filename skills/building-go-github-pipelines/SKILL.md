@@ -176,11 +176,11 @@ After writing all files, run this mental dry-run checklist:
 - [ ] Pinned versions match Renovate customManager regex patterns in `renovate.json`
 - [ ] `golangci-lint version` in ci.yml matches version in `Taskfile.yml` (if locally installed)
 - [ ] `CGO_ENABLED=1` only on the `test` job (race detector needs it)
-- [ ] Release workflow has a `verify` job that gates the `release` job
+- [ ] Release workflow (matrix): `verify` gates `build`, `build` gates `publish` (single publisher eliminates parallel release-API race)
 - [ ] `.govulncheck-ignore` exists and is referenced by the govulncheck gate in ci.yml
 - [ ] `fetch-depth: 0` on the secret-detection job (TruffleHog needs full history)
 - [ ] Action versions are consistent: `checkout@v6`, `setup-go@v6` (with `cache: true`),
-      `setup-node@v6`, `upload-artifact@v7`, docker actions `@v4`, `goreleaser-action@v7`
+      `setup-node@v6`, `upload-artifact@v7`, `download-artifact@v8`, docker actions `@v4`, `goreleaser-action@v7`
 - [ ] `git ls-files cmd/` returns hits — binary entry point is tracked
 - [ ] `git ls-files testdata/` returns all required test fixtures (if testdata/ exists)
 - [ ] golangci config loads cleanly — substitute `{{MODULE}}` and run `golangci-lint config verify .golangci.yml` (or `golangci-lint run --issues-exit-code=0` on a minimal test); must NOT error with "is a formatter" or similar
