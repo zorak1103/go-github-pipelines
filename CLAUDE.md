@@ -77,7 +77,8 @@ The file declares `version: "2"`. v2 schema has breaking differences from v1:
 
 - Settings must be **nested under `linters:`** as `linters.settings:` — the old top-level `linters-settings:` key is **silently ignored** in v2, so threshold violations go undetected.
 - `gofmt` and `goimports` are **formatters, not linters** in v2. They must appear under a top-level `formatters.enable:` block. Listing them under `linters.enable:` causes a hard error: `Error: gofmt is a formatter`.
-- `wrapcheck.ignorePackageGlobs` uses `{{MODULE}}/*` (the full Go module path), not `{{DOCKER_USER}}/{{PROJECT}}/*` (which is a Docker image name, not a module path).
+- `wrapcheck.ignore-package-globs` (kebab-case) uses `{{MODULE}}/*` (the full Go module path), not `{{DOCKER_USER}}/{{PROJECT}}/*` (which is a Docker image name, not a module path). The camelCase `ignorePackageGlobs` is rejected by the v2 schema (`additional properties 'ignorePackageGlobs' not allowed`) — all `linters.settings.*` keys use kebab-case in v2.
+- Path/linter exclusions live under `linters.exclusions` — **not** `issues.exclude-rules` (v1, silently ignored in v2, same trap as `linters-settings:` above). Use `exclusions.rules` (path + linters list) to relax specific linters on a path, and `exclusions.paths` (plain regex list) to blanket-exclude a path from every linter — a `rules` entry with `linters: [all]` is not valid. Only `max-issues-per-linter` / `max-same-issues` stay under `issues:`.
 
 Verify after any edit:
 ```bash

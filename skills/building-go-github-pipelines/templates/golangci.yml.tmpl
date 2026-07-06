@@ -87,8 +87,25 @@ linters:
         - G304  # File path provided as taint input (often intentional)
 
     wrapcheck:
-      ignorePackageGlobs:
+      ignore-package-globs:
         - "{{MODULE}}/*"
+
+  exclusions:
+    rules:
+      # Test files: relax rules that hurt test readability
+      - path: "_test\\.go$"
+        linters:
+          - errcheck
+          - gosec
+          - gocritic
+          - funlen
+          - gocognit
+          - govet
+          - goconst
+          - wrapcheck
+    paths:
+      # Generated code: exclude from all linters
+      - "(_gen|_generated)\\.go$"
 
 formatters:
   enable:
@@ -96,24 +113,6 @@ formatters:
     - goimports
 
 issues:
-  exclude-rules:
-    # Test files: relax rules that hurt test readability
-    - path: "_test\\.go$"
-      linters:
-        - errcheck
-        - gosec
-        - gocritic
-        - funlen
-        - gocognit
-        - govet
-        - goconst
-        - wrapcheck
-
-    # Generated code
-    - path: "(_gen|_generated)\\.go$"
-      linters:
-        - all
-
   # Maximum issues per linter (0 = unlimited)
   max-issues-per-linter: 0
   max-same-issues: 0

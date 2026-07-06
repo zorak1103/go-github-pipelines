@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.3.1] — 2026-07-06
+
+### Fixes
+
+- **golangci.yml.tmpl v1/v2 schema drift** (fixes #1) — The template declared `version: "2"`
+  but `issues.exclude-rules` (with a `linters: [all]` blanket-exclude rule for generated code)
+  is v1 schema; golangci-lint v2 silently ignores it, so the intended test-file and
+  generated-file linter relaxations never took effect. Moved to `linters.exclusions.rules`
+  (path + linters relaxations) and `linters.exclusions.paths` (blanket path excludes);
+  `issues:` now holds only `max-issues-per-linter` / `max-same-issues`.
+- **wrapcheck.ignorePackageGlobs key casing** — `linters.settings.wrapcheck` used camelCase
+  `ignorePackageGlobs`, which golangci-lint v2's schema rejects (`additional properties
+  'ignorePackageGlobs' not allowed`); all `linters.settings.*` keys are kebab-case in v2.
+  Renamed to `ignore-package-globs`. Found while verifying the fix above against a real
+  `golangci-lint v2.12.2` binary — both bugs independently broke `config verify`.
+
+> **If you generated config with v1.3.0 or earlier, regenerate `.golangci.yml` to pick up
+> both fixes — `golangci-lint config verify` now passes and the test/generated-file
+> exclusions actually apply.**
+
 ## [1.3.0] — 2026-06-22
 
 ### Fixes
