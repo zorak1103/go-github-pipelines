@@ -122,3 +122,13 @@ tasks:
     desc: Download all dependencies
     cmds:
       - go mod download
+
+  # ============================================================================
+  # GIT HOOKS
+  # ============================================================================
+  install-hooks:
+    desc: Install git hooks (run once after cloning)
+    cmds:
+      - git config core.hooksPath .githooks
+      - chmod +x .githooks/pre-commit .githooks/pre-push || true
+      - echo "Git hooks installed (core.hooksPath=.githooks). Bypass any hook with --no-verify."

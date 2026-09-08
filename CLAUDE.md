@@ -100,7 +100,7 @@ Not:
 "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"]
 ```
 
-There are 4 `customManagers` entries; all must use the new format. Validate with:
+There are 4 base `customManagers` entries; the opt-in mutest block adds a fifth. All must use the new format. Validate with:
 ```bash
 npx --yes renovate-config-validator renovate.json
 ```
@@ -152,13 +152,29 @@ chmod +x /tmp/cov.sh
 bash -n /tmp/cov.sh   # syntax check
 ```
 
+### githooks + mutest
+
+- Hook templates are always generated but never installed automatically; `task install-hooks`
+  sets `core.hooksPath`.
+- `.githooks/pre-push` uses the removal-region markers `# [MUTEST-BEGIN: ...]` and
+  `# [MUTEST-END]`; when mutest is disabled, remove that region, not user-owned hook content.
+- The CI mutation job must use `fetch-depth: 0`, `needs: test`, `timeout-minutes`, and
+  `set -euo pipefail` before piping JSON through `tee`; otherwise a survived mutant can be masked.
+- Route `github.base_ref` through `env:` and read it as `${BASE_REF}` in `run:` blocks. Never put
+  `${{ github.base_ref }}` inside a shell script.
+- Mutest is pinned in CI and Taskfile with adjacent Renovate annotations and is never automerged.
+  Its default threshold is zero (any survivor fails), matching the pre-push hook.
+- `mutest:all` is advisory: packages without tests report mutants as survived and should not be a
+  blocking CI gate.
+
 ## Tool version locations
 
 Versions live in two places — they must stay in sync so Renovate's customManagers can track them:
 
 | Tool | Location in templates | Renovate annotation |
 |---|---|---|
-| Go | Derived from `go.mod` via `go-version-file: go.mod` on every `setup-go` step. No env var or Renovate annotation — Renovate's built-in `gomod` manager tracks the `go` directive. | (n/a — built-in manager) |
+| Go | `go.mod` only — `go 1.X` (language) + `toolchain go1.X.Y` (exact pin) on separate lines. Every `setup-go` uses `go-version-file: go.mod`; Step 2 discovers latest stable, proposes a diff, waits for confirmation, then runs tidy/build/test. No env var; no `run.go` in `.golangci.yml`. | Built-in `gomod` manager: the `go` directive is normally manual; `toolchain` updates are proposed by default and minor/major automerge is blocked by the generated packageRule |
+| mutest | `ci.yml` mutation-test job and `Taskfile.yml` `mutest:install` task | `# renovate: datasource=go depName=github.com/fchimpan/mutest` |
 | golangci-lint | `ci.yml` `go install` step, both release workflows, `Taskfile.yml` | `# renovate: datasource=go depName=github.com/golangci/golangci-lint/v2` |
 | govulncheck | `ci.yml` `go install` step | `# renovate: datasource=go depName=golang.org/x/vuln` |
 | GoReleaser | `release-goreleaser.yml` `version:` field | `# renovate: datasource=github-releases depName=goreleaser/goreleaser` |
@@ -173,7 +189,7 @@ skills/building-go-github-pipelines/
   SKILL.md                          ← skill instructions (user-facing; do not put dev notes here)
   templates/
     golangci.yml.tmpl               ← golangci-lint v2 config (~30 linters)
-    renovate.json.tmpl              ← Renovate config (4 customManagers)
+    renovate.json.tmpl              ← Renovate config (4 base customManagers; mutest adds a fifth)
     check-coverage.sh               ← coverage gate (per-file/per-function/total)
     govulncheck-ignore.tmpl         ← CVE ignore-list (comment-only template)
     Taskfile.yml.tmpl               ← task runner (local/CI parity)
@@ -184,9 +200,13 @@ skills/building-go-github-pipelines/
       release-goreleaser.yml.tmpl   ← release via GoReleaser (Docker + binaries)
       release-matrix.yml.tmpl       ← release via matrix (binaries only, no Docker)
       renovate.yml.tmpl             ← Renovate trigger workflow
+    githooks/
+      pre-commit                    ← gofmt staged Go files (always generated)
+      pre-push                       ← vet + lint (+ optional mutest region)
   blocks/
     extra-toolchain.yml             ← snippet: install external binary for tests
     frontend-embed.yml              ← snippet: Node.js build + go:embed
+    mutest.yml                      ← snippet: PR-only diff-scoped mutation-testing job
 ```
 
 The `blocks/` files are instructional snippets inserted by the generator — they are not standalone workflow files. They contain commented-out `renovate.json` customManager examples that must stay in sync with the current Renovate API format.
@@ -195,8 +215,10 @@ The `blocks/` files are instructional snippets inserted by the generator — the
 
 - The `govulncheck` ignore-list gate pattern (compare found vs. ignored via `comm -23`) — this is intentional and correct
 - `CGO_ENABLED=1` on the `test` job only (race detector requires cgo; build job intentionally uses `CGO_ENABLED=0`)
-- `fetch-depth: 0` on the secret-detection job only (TruffleHog needs full git history; other jobs use shallow clone for speed)
+- `fetch-depth: 0` on the secret-detection and mutation-test jobs (TruffleHog needs full history; mutest needs the PR base ref; other jobs use shallow clone for speed)
 - `go install` pinned for golangci-lint (not `golangci-lint-action` — exact version parity between local and CI is the goal)
 - Artifact upload instead of Codecov (no external service dependency is a deliberate choice)
 - `go-version-file: go.mod` on every `setup-go` step (do not reintroduce a `GO_VERSION` env var — that creates two Renovate tracking sources that drift)
+- Two-line Go version in `go.mod` (`go 1.X` plus `toolchain go1.X.Y`) — do not collapse them into a single patch-level `go` directive or add `.golangci.yml` `run.go`
+- Minor/major `toolchain` updates and mutest updates remain human-reviewed; do not remove the generated Renovate guard rules
 - `concurrency: cancel-in-progress` in `ci.yml` only — release workflows intentionally lack it (a cancelled publish leaves a partial release)

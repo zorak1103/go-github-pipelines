@@ -15,7 +15,8 @@ files, combining the best patterns learned across multiple production repos:
 | Renovate with customManager auto-updates | Release via manual matrix (binary-only) |
 | `.golangci.yml` (~30 linters, v2 schema) | Docker runtime image |
 | `scripts/check-coverage.sh` | Extra toolchain (e.g. Typst, Pandoc) |
-| `.govulncheck-ignore` gate | |
+| `.govulncheck-ignore` gate | Opt-in mutest PR gate + local hooks |
+| `.githooks/` format/lint hooks (inert until installed) | |
 
 ## Key decisions baked in
 
@@ -26,7 +27,9 @@ files, combining the best patterns learned across multiple production repos:
 - **Per-file** 80% coverage (not total %) — catches low-coverage new code
 - **Renovate** self-hosted with `customManagers` that track pinned `go install` versions
 - **Release re-verify** — lint+test gate before publishing, even on tag pushes
-- Artifact-only coverage (no Codecov dependency)
+- **Artifact-only coverage** (no Codecov dependency)
+- **Go version alignment** from `go.dev/dl`, proposed as `go 1.X` + `toolchain go1.X.Y` and never changed silently
+- **Mutation testing** (opt-in) via pinned mutest, scoped to changed PR lines
 
 ## Install
 
@@ -55,6 +58,9 @@ and ask for your Docker Hub username before generating the files.
   ci.yml              — lint, test/coverage, build, govulncheck, TruffleHog
   release.yml         — verify + GoReleaser (or manual matrix)
   renovate.yml        — daily Renovate with config validator
+.githooks/
+  pre-commit          — gofmt staged Go files
+  pre-push            — go vet + golangci-lint (+ mutest when enabled)
 .golangci.yml         — full linter config (v2 schema)
 scripts/
   check-coverage.sh   — per-file 80% gate, honors // coverage-exempt:
@@ -69,14 +75,16 @@ Dockerfile            — alpine, non-root UID 1000 (if Docker)
 
 | Tool | Version |
 |---|---|
-| Go | 1.26.4 |
+| Go | updated to current stable on explicit request; resolved from `go.dev/dl` and written as `go` + `toolchain` in `go.mod` |
 | golangci-lint | v2.12.2 |
 | govulncheck | v1.3.0 |
 | GoReleaser | v2.16.0 |
 | TruffleHog | v3.88.31 |
+| mutest (opt-in) | v0.6.1 |
 
-All versions are annotated with `# renovate:` comments and tracked by
-`customManagers` in the generated `renovate.json`.
+All tool versions managed by custom managers are annotated with `# renovate:` comments and tracked
+in the generated `renovate.json`; Go is the exception and uses Renovate's built-in `gomod`
+manager for the `go.mod` directives.
 
 ## License
 

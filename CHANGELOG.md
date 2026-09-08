@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.4.0] — 2026-09-08
+
+### Features
+
+- **Go toolchain alignment** — The skill can propose the newest stable Go release from
+  `https://go.dev/dl/?mode=json`, write `go 1.X` plus `toolchain go1.X.Y` to `go.mod` after
+  explicit confirmation, and verify with `go mod tidy`, `go build ./...`, and `go test ./...`.
+  The pipeline continues to use `go-version-file: go.mod`; no `GO_VERSION` or `.golangci.yml`
+  `run.go` source is introduced.
+- **Git hooks** — Generated `.githooks/pre-commit` and `.githooks/pre-push` templates plus an
+  `install-hooks` Taskfile task provide local format/lint parity without installing hooks
+  automatically.
+- **Opt-in mutest** — A pinned `github.com/fchimpan/mutest` integration adds a diff-scoped,
+  PR-only blocking job, a matching pre-push region, `mutest`/`mutest:all`/`mutest:install` tasks,
+  JSON artifact reporting, and a fifth Renovate custom manager. Mutest bumps are never automerged.
+
+### Notes
+
+- The mutation job uses `set -euo pipefail` so `tee` cannot mask a survived-mutant failure.
+- Go toolchain minor/major updates are kept human-reviewed because adding a `toolchain` directive
+  activates Renovate's built-in gomod toolchain updates.
+
 ## [1.3.1] — 2026-07-06
 
 ### Fixes
