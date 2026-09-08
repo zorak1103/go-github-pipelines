@@ -1,0 +1,137 @@
+# mutest.yml — optional mutation-testing block
+# Tool: mutest (github.com/fchimpan/mutest)
+#
+# Insert this job at the [MUTEST: insert mutation-testing job here] marker in
+# templates/workflows/ci.yml.tmpl. This file is an instructional block, not a
+# standalone workflow.
+#
+# mutest is opt-in. Keep the version pinned in both this job and Taskfile.yml.
+# The default threshold (0) means any survived mutant fails the job, matching
+# the local pre-push hook. Use //mutest:skip only with a prose justification for
+# a proven equivalent mutant.
+
+  # ============================================================================
+  # MUTATION TESTING — mutest, scoped to lines changed vs the PR base branch
+  # ============================================================================
+  mutation-test:
+    name: Mutation Test (changed lines)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CGO_ENABLED: "0"  # mutest does not use the race detector
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # -diff resolves the merge-base against origin/<base>
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # [FRONTEND-EMBED: insert setup-node step here]
+      # [EXTRA-TOOLCHAIN: insert toolchain install step here]
+
+      - name: Download dependencies
+        run: go mod download
+
+      # [FRONTEND-EMBED: insert build:frontend step here]
+
+      - name: Install mutest
+        # renovate: datasource=go depName=github.com/fchimpan/mutest
+        run: go install github.com/fchimpan/mutest@{{MUTEST_VERSION}}
+
+      - name: Run mutest on changed lines
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if ! git rev-parse --verify "origin/${BASE_REF}" >/dev/null 2>&1; then
+            git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+          fi
+          mutest -diff "origin/${BASE_REF}" \
+            -workers 4 \
+            -timeout 60s \
+            -json ./... | tee mutest-report.json
+
+      - name: Summarize surviving mutants
+        if: always()
+        run: |
+          command -v jq >/dev/null 2>&1 || exit 0
+          [ -s mutest-report.json ] || exit 0
+          jq -r '.results[]? | select(.status == "survived") | "::warning::mutest survivor: \(.package) \(.file):\(.line):\(.column) — \(.desc). Add a boundary test, or annotate with //mutest:skip plus a justification."' \
+            mutest-report.json
+
+      - name: Upload mutest report
+        if: always()  # upload even when the gate fails
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutest-report
+          path: mutest-report.json
+          retention-days: 7
+
+# When mutest is enabled, replace the pre-push marker with this region:
+# Copy the shell lines below without their leading instructional '# ' prefix.
+#
+#   # [MUTEST-BEGIN]
+#   # Mutation-testing pass (mutest, github.com/fchimpan/mutest) scoped to lines
+#   # changed vs origin/main. A survived mutant fails the push, same as vet/lint:
+#   # annotate genuine equivalent mutants with //mutest:skip plus a prose justification.
+#   echo "→ mutest -diff origin/main ./..."
+#   if ! command -v mutest >/dev/null 2>&1; then
+#     echo "  (skipped: mutest not installed — run 'task mutest:install')"
+#   elif ! git rev-parse --verify origin/main >/dev/null 2>&1; then
+#     echo "  (skipped: origin/main not resolvable locally — run 'git fetch origin main')"
+#   else
+#     mutest -diff origin/main ./...
+#   fi
+#   # [MUTEST-END]
+#
+# Also add these tasks to Taskfile.yml:
+#   # ============================================================================
+#   # MUTATION TESTING
+#   # ============================================================================
+#   mutest:
+#     desc: Mutation-test lines changed vs origin/main (mirrors the CI gate)
+#     cmds:
+#       - mutest -diff origin/main ./...
+#
+#   mutest:all:
+#     desc: Mutation-test the whole module (slow; advisory for packages without tests)
+#     cmds:
+#       - mutest ./...
+#
+#   mutest:install:
+#     desc: Install mutest locally (tracked by Renovate)
+#     cmds:
+#       # renovate: datasource=go depName=github.com/fchimpan/mutest
+#       - go install github.com/fchimpan/mutest@{{MUTEST_VERSION}}
+#
+# Also add the following entries to renovate.json when mutest is enabled:
+#
+#   packageRules:
+#     {
+#       "description": "Keep mutest bumps human-reviewed because the v0.x tool is a blocking gate",
+#       "matchManagers": ["custom.regex"],
+#       "matchPackageNames": ["github.com/fchimpan/mutest"],
+#       "automerge": false
+#     }
+#
+#   customManagers:
+#     {
+#       "description": "Update mutest installed via go install",
+#       "customType": "regex",
+#       "managerFilePatterns": ["/\\.github/workflows/.*\\.ya?ml$/", "/Taskfile\\.yml$/"],
+#       "matchStrings": [
+#         "# renovate: datasource=go depName=github.com/fchimpan/mutest\\n.*mutest@(?<currentValue>[^\\s\"]+)"
+#       ],
+#       "datasourceTemplate": "go",
+#       "depNameTemplate": "github.com/fchimpan/mutest"
+#     }
+#
+# When disabled, remove these additions and the marked hook region; preserve
+# existing user-owned mutest content and existing correct Taskfile/Renovate entries.
